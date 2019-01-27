@@ -4,120 +4,103 @@
 const assert = require('assert');
 const sinon = require('sinon');
 
-const {noop, Handler, Signal} = require('../src/index.js');
+const {destroy} = require('@peoro/destroy');
+const {Handler, Signal} = require('../src/index.js');
 
 describe( `@peoro/signal`, function(){
 	describe( `Signal`, function(){
 		it(`addHandler()`, function(){
-			const spy = sinon.spy();
+			const spy1 = sinon.spy(), spy2 = sinon.spy();
 			const sig = new Signal();
 
 			assert.deepEqual( sig.handlers, [] );
 
-			sig.addHandler( spy );
+			sig.addHandler( spy1 );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy),
+				new Handler(sig, spy1),
 			]);
 
-			sig.addHandler( spy, {id:`hey`} );
+			sig.addHandler( spy2 );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy),
-				new Handler(spy, `hey`),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
 			]);
 
-			sig.addHandler( spy, {id:`yo`, n:0} );
+			sig.addHandler( spy2, {n:0} );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy, `yo`),
-				new Handler(spy),
-				new Handler(spy, `hey`),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
 			]);
 
-			sig.addHandler( spy, {id:noop, n:2} );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy, `yo`),
-				new Handler(spy),
-				new Handler(spy, noop),
-				new Handler(spy, `hey`),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
 			]);
 
-			assert( spy.notCalled );
+			assert( spy1.notCalled );
+			assert( spy2.notCalled );
 		});
 
-		it(`removeHandler()`, function(){
-			const spy = sinon.spy();
+		it(`destroy( handler )`, function(){
+			const spy1 = sinon.spy(), spy2= sinon.spy();
 			const sig = new Signal();
-			let res;
 
-			sig.addHandler( spy, {id:`x`} )
-				.addHandler( spy, {id:`y`} )
-				.addHandler( spy )
-				.addHandler( spy, {id:`y`} )
-				.addHandler( spy, {id:`z`} )
-				.addHandler( spy )
-				.addHandler( spy, {id:`y`} )
-				.addHandler( spy, {id:`y`} )
-				.addHandler( spy );
-
-			const startHandlers = [
-				new Handler(spy, `x`),
-				new Handler(spy, 'y'),
-				new Handler(spy),
-				new Handler(spy, 'y'),
-				new Handler(spy, `z`),
-				new Handler(spy),
-				new Handler(spy, 'y'),
-				new Handler(spy, 'y'),
-				new Handler(spy),
-			];
-
-			assert.deepStrictEqual( sig.handlers, startHandlers );
-
-			res = sig.removeHandler( `missing` );
-			assert.strictEqual( res, 0 );
-			assert.deepStrictEqual( sig.handlers, startHandlers );
-
-			res = sig.removeHandler( 'x', {n:0} );
-			assert.strictEqual( res, 0 );
-			assert.deepStrictEqual( sig.handlers, startHandlers );
-
-			res = sig.removeHandler( 'y' );
-			assert.strictEqual( res, 1 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy, `x`),
-				new Handler(spy),
-				new Handler(spy, 'y'),
-				new Handler(spy, `z`),
-				new Handler(spy),
-				new Handler(spy, 'y'),
-				new Handler(spy, 'y'),
-				new Handler(spy),
+				new Handler(sig, spy1),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
 			]);
 
-			res = sig.removeHandler( 'y', {n:2} );
-			assert.strictEqual( res, 2 );
+			destroy( sig.handlers[3] );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy, `x`),
-				new Handler(spy),
-				new Handler(spy, `z`),
-				new Handler(spy),
-				new Handler(spy, 'y'),
-				new Handler(spy),
+				new Handler(sig, spy1),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy2),
 			]);
 
-			res = sig.removeHandler( spy, {n:Infinity} );
-			assert.strictEqual( res, 3 );
+			let handle = sig.handlers[1];
+			destroy( handle );
+			destroy( handle );
+			destroy( handle );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy, `x`),
-				new Handler(spy, `z`),
-				new Handler(spy, 'y'),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy2),
 			]);
 
-			res = sig.removeHandler( `x`, {n:2} );
-			assert.strictEqual( res, 1 );
+			destroy( sig.handlers[0] );
 			assert.deepStrictEqual( sig.handlers, [
-				new Handler(spy, `z`),
-				new Handler(spy, 'y'),
+				new Handler(sig, spy2),
+				new Handler(sig, spy2),
 			]);
+
+			destroy( sig.handlers[0] );
+			assert.deepStrictEqual( sig.handlers, [
+				new Handler(sig, spy2),
+			]);
+
+			destroy( sig.handlers[0] );
+			assert.deepStrictEqual( sig.handlers, [] );
 		});
 
 		it(`trigger()`, function(){
@@ -128,12 +111,12 @@ describe( `@peoro/signal`, function(){
 			sig.trigger();
 
 			// triggering spies
-			sig.addHandler( spies[0] )
-				.addHandler( spies[1] )
-				.addHandler( spies[1] )
-				.addHandler( spies[2] )
-				.addHandler( spies[1] )
-				.trigger();
+			sig.addHandler( spies[0] );
+			sig.addHandler( spies[1] );
+			sig.addHandler( spies[1] );
+			sig.addHandler( spies[2] );
+			sig.addHandler( spies[1] );
+			sig.trigger();
 
 			// checking calls
 			assert( spies[0].calledOnce );
@@ -152,28 +135,27 @@ describe( `@peoro/signal`, function(){
 			const spy2 = sinon.spy();
 			const sig = new Signal();
 
-			sig.addHandler( spy1 )
-				.addHandler( spy2 )
-				.addHandler( spy2 )
-				.trigger( `a`, spy1 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
+			sig.addHandler( spy2 );
+			sig.trigger( `a`, spy1 );
 
 			assert( spy1.alwaysCalledWithExactly(`a`, spy1) );
 			assert( spy2.alwaysCalledWithExactly(`a`, spy1) );
 		});
 
-		it(`removeHandler() removes immediately`, function(){
+		it(`remove(handler) removes immediately`, function(){
 			const spy1 = sinon.spy();
 			const spy2 = sinon.spy();
 			const sig = new Signal();
 
-			sig
-				.addHandler( ()=>{
-					sig.removeHandler( spy1 );
-					sig.removeHandler( spy2 );
-				})
-				.addHandler( spy1 )
-				.addHandler( spy2 )
-				.addHandler( spy1 );
+			sig.addHandler( ()=>{
+				destroy( handle2 );
+				destroy( handle3 );
+			});
+			const handle2 = sig.addHandler( spy1 );
+			const handle3 = sig.addHandler( spy2 );
+			sig.addHandler( spy1 );
 			sig.trigger();
 
 			assert( spy1.calledOnce );

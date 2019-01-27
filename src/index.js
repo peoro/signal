@@ -1,12 +1,45 @@
 
 'use strict';
 
-function noop(){}
+const {noop, destructor, initDestroyable} = require('@peoro/destroy');
+
+const signalRef = Symbol();
+const callback = Symbol();
 
 class Handler {
-	constructor( fn, id=fn ) {
-		this.fn = fn;
-		this.id = id;
+	constructor( signal, fn ) {
+		initDestroyable( this );
+		this[signalRef] = signal;
+		this[callback] = fn;
+	}
+
+	[destructor]() {
+		this[callback] = noop;
+
+		const {handlers} = this[signalRef];
+		let len = handlers.length;
+		let i = 0;
+
+		// finding this handler
+		while( i < len) {
+			if( handlers[i] !== this ) {
+				++i;
+				continue;
+			}
+			break;
+		}
+
+		// this not found (it was already destroyed)
+		if( i >= len ) {
+			return;
+		}
+
+		// shifting all the remaining handlers by one, overriding the current one
+		while( i < len ) {
+			handlers[i] = handlers[i+1]; // shifting the current handler
+			++i;
+		}
+		handlers.length = len - 1;
 	}
 }
 
@@ -15,8 +48,8 @@ class Signal {
 		this.handlers = [];
 	}
 
-	addHandler( fn, {id, n=-1}={} ) {
-		const handler = new Handler( fn, id );
+	addHandler( fn, {n=-1}={} ) {
+		const handler = new Handler( this, fn );
 
 		switch( n ) {
 			case -1: {
@@ -32,66 +65,7 @@ class Signal {
 			}
 		}
 
-		return this;
-	}
-
-	removeHandler( id, {n=1}={} ) {
-		const handlers = this.handlers;
-		const len = handlers.length;
-		let i = 0, j;
-
-		if( n < 1 ) {
-			return 0;
-		}
-
-		// removing the first matching handler
-		{
-			while( i < len) {
-				if( handlers[i].id !== id ) {
-					++i;
-					continue;
-				}
-
-				// found a match
-				handlers[i].fn = noop;
-				break;
-			}
-		}
-
-		// if we didn't find anytihng, returning now
-		if( i === handlers.length ) {
-			return 0;
-		}
-
-		// if I had to remove more than one, removing the ohters while shifting everything...
-		// remember that we already found the first match
-		let matches = 1;
-		if( n > 1 ) {
-			for( j = i+matches; j < len; ++j ) {
-				const handler = handlers[j];
-				handlers[i] = handler; // shifting the current handler
-
-				if( handler.id !== id ) {
-					++i;
-					continue;
-				}
-
-				// found another match
-				handler.fn = noop;
-				++matches;
-				if( matches === n ) {
-					break;
-				}
-			}
-		}
-
-		// shifting the remaining elements
-		for( j = i+matches; j < len; ++j, ++i ) {
-			handlers[i] = handlers[j]; // shifting the current handler
-		}
-		handlers.length = i;
-
-		return matches;
+		return handler;
 	}
 
 	trigger() {
@@ -107,7 +81,7 @@ class Signal {
 		}
 
 		while( i < len ) {
-			handlersCopy[i].fn( ...arguments );
+			handlersCopy[i][callback]( ...arguments );
 			++ i;
 		}
 
@@ -117,6 +91,10 @@ class Signal {
 
 module.exports = {
 	noop,
+
+	signalRef,
+	callback,
+
 	Handler,
 	Signal,
 };
