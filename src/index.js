@@ -1,6 +1,7 @@
 
 'use strict';
 
+const assert = require('assert');
 const {noop, destructor, initDestroyable} = require('@peoro/destroy');
 
 const signalRef = Symbol();
@@ -8,38 +9,28 @@ const callback = Symbol();
 
 class Handler {
 	constructor( signal, fn ) {
+		assert.strictEqual( typeof fn, 'function' );
 		initDestroyable( this );
 		this[signalRef] = signal;
 		this[callback] = fn;
 	}
 
 	[destructor]() {
-		this[callback] = noop;
-
-		const {handlers} = this[signalRef];
-		let len = handlers.length;
+		const signal = this[signalRef];
+		const {handlers} = signal;
+		const len = handlers.length;
 		let i = 0;
 
-		// finding this handler
 		while( i < len) {
 			if( handlers[i] !== this ) {
 				++i;
 				continue;
 			}
-			break;
-		}
 
-		// this not found (it was already destroyed)
-		if( i >= len ) {
+			// handler found
+			signal.removeNthHandler( i );
 			return;
 		}
-
-		// shifting all the remaining handlers by one, overriding the current one
-		while( i < len ) {
-			handlers[i] = handlers[i+1]; // shifting the current handler
-			++i;
-		}
-		handlers.length = len - 1;
 	}
 }
 
@@ -66,6 +57,40 @@ class Signal {
 		}
 
 		return handler;
+	}
+	// NOTE: returns the removed handler without `destroying()` it!
+	removeNthHandler( i ) {
+		const {handlers} = this;
+		const len = handlers.length;
+
+		assert( i >= 0 && i < len, `${i} ∉ [0..${len})` );
+
+		const handler = handlers[i];
+		handler[callback] = noop;
+
+		// shifting all the remaining handlers by one, overriding the current one
+		while( i < len ) {
+			handlers[i] = handlers[i+1]; // shifting the current handler
+			++i;
+		}
+		handlers.length = len - 1;
+
+		return handler;
+	}
+	// NOTE: returns the removed handler without `destroying()` it!
+	removeHandler( fn ) {
+		const {handlers} = this;
+		const len = handlers.length;
+		let i = 0;
+
+		while( i < len) {
+			if( handlers[i][callback] !== fn ) {
+				++i;
+				continue;
+			}
+			// handler found
+			return this.removeNthHandler( i );
+		}
 	}
 
 	trigger() {

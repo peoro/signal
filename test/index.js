@@ -49,6 +49,19 @@ describe( `@peoro/signal`, function(){
 				new Handler(sig, spy2),
 			]);
 
+			sig.addHandler( spy2, {n:4} );
+			assert.deepStrictEqual( sig.handlers, [
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+			]);
+
 			assert( spy1.notCalled );
 			assert( spy2.notCalled );
 		});
@@ -100,6 +113,50 @@ describe( `@peoro/signal`, function(){
 			]);
 
 			destroy( sig.handlers[0] );
+			assert.deepStrictEqual( sig.handlers, [] );
+		});
+
+		it(`removeHandler( handler )`, function(){
+			const spy1 = sinon.spy(), spy2= sinon.spy();
+			const sig = new Signal();
+
+			sig.addHandler( spy1 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
+			sig.addHandler( spy1 );
+			sig.addHandler( spy2 );
+			assert.deepStrictEqual( sig.handlers, [
+				new Handler(sig, spy1),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+			]);
+
+			sig.removeHandler( spy1 );
+			assert.deepStrictEqual( sig.handlers, [
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+			]);
+
+			sig.removeHandler( spy2 );
+			assert.deepStrictEqual( sig.handlers, [
+				new Handler(sig, spy1),
+				new Handler(sig, spy1),
+				new Handler(sig, spy2),
+			]);
+
+			sig.removeHandler( spy1 );
+			sig.removeHandler( spy1 );
+			sig.removeHandler( spy1 );
+			assert.deepStrictEqual( sig.handlers, [
+				new Handler(sig, spy2),
+			]);
+
+			sig.removeHandler( spy2 );
+			sig.removeHandler( spy2 );
 			assert.deepStrictEqual( sig.handlers, [] );
 		});
 
