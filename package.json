@@ -1,6 +1,6 @@
 {
 	"name": "@peoro/signal",
-	"version": "0.9.0",
+	"version": "1.0.0",
 	"description": "Simple and lightweight signal emitter library",
 	"main": "src/index.js",
 	"scripts": {
@@ -8,7 +8,9 @@
 		"test": "nyc mocha test/index.js",
 		"coverage": "nyc report --reporter=lcov"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"@peoro/destroy": "^1.0.1"
+	},
 	"devDependencies": {
 		"@peoro/eslint-config": "^1.0.1",
 		"eslint": "^5.10.0",
@@ -18,7 +20,16 @@
 	},
 	"author": "peoro",
 	"license": "MIT",
-	"keywords": ["EventEmitter", "events", "event", "trigger", "emit", "emitter", "signals", "signal"],
+	"keywords": [
+		"EventEmitter",
+		"events",
+		"event",
+		"trigger",
+		"emit",
+		"emitter",
+		"signals",
+		"signal"
+	],
 	"homepage": "https://github.com/peoro/signal#readme",
 	"bugs": "https://github.com/peoro/signal/issues",
 	"repository": "github:peoro/signal"
