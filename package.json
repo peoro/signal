@@ -1,6 +1,6 @@
 {
 	"name": "@peoro/signal",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Simple and lightweight signal emitter library",
 	"main": "src/index.js",
 	"scripts": {
@@ -9,9 +9,12 @@
 		"coverage": "nyc report --reporter=lcov"
 	},
 	"dependencies": {
+	},
+	"peerDependencies": {
 		"@peoro/destroy": "^1.0.1"
 	},
 	"devDependencies": {
+		"@peoro/destroy": "^1.0.1",
 		"@peoro/eslint-config": "^1.0.1",
 		"eslint": "^5.10.0",
 		"mocha": "^5.2.0",
