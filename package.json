@@ -1,6 +1,6 @@
 {
 	"name": "@peoro/signal",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Simple and lightweight signal emitter library",
 	"main": "src/index.js",
 	"scripts": {
@@ -8,18 +8,17 @@
 		"test": "nyc mocha test/index.js",
 		"coverage": "nyc report --reporter=lcov"
 	},
-	"dependencies": {
-	},
+	"dependencies": {},
 	"peerDependencies": {
-		"@peoro/destroy": "^1.0.1"
+		"@peoro/destroy": "^1.0.4"
 	},
 	"devDependencies": {
-		"@peoro/destroy": "^1.0.1",
+		"@peoro/destroy": "^1.0.4",
 		"@peoro/eslint-config": "^1.0.1",
-		"eslint": "^5.10.0",
-		"mocha": "^5.2.0",
-		"nyc": "^13.1.0",
-		"sinon": "^7.2.2"
+		"eslint": "^6.6.0",
+		"mocha": "^6.2.2",
+		"nyc": "^14.1.1",
+		"sinon": "^7.5.0"
 	},
 	"author": "peoro",
 	"license": "MIT",
